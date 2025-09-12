@@ -6,54 +6,10 @@ import re
 import heapq
 import time
 import regex
+import tracemalloc
 
 utf2int={}
 int2utf={}
-
-def print_pair_positions(pair_positions):
-    print("pair_positions:")
-    for k in pair_positions:
-        k_decoded=(int2utf[k[0]].decode("utf-8"),int2utf[k[1]].decode("utf-8"))
-        positions=pair_positions[k]
-        print(f"{k_decoded}: {positions}",end='   ')
-    print('\n\n')
-
-def print_token_dict(token_dict):
-    print("token_dict:")
-    for k in token_dict:
-        v=token_dict[k]
-        v_decoded=(int2utf[v].decode("utf-8"))
-        print(f"{k}: {v_decoded}",end='   ')
-    print('\n\n')
-
-def print_pair_counter(pair_counter):
-    print("pair_counter:")
-    for k in pair_counter:
-        k_decoded=(int2utf[k[0]].decode("utf-8"),int2utf[k[1]].decode("utf-8"))
-        v=pair_counter[k]
-        print(f"{k_decoded}: {v}",end='   ')
-    print('\n\n')
-
-def print_next_prev(next,prev):
-    print("next:")
-    for k in next:
-        key,value=k,next[k]
-        k_decoded=int2utf[k].decode("utf-8",errors='ignore')
-        if value is not None:
-            v_decoded=int2utf[value].decode("utf-8",errors='ignore')
-        else:
-            v_decoded=None
-        print(f"{k_decoded}: {v_decoded}",end='   ')
-    print('\n')
-    print("prev:")
-    for k in prev:
-        v=prev[k]
-        if v is not None:
-            v_decoded=int2utf[v].decode("utf-8")
-        else:
-            v_decoded=None
-        print(f"{k}: {v_decoded}",end='   ')
-    print('\n\n')
 
 def find_chunk_boundaries(
     file: BinaryIO,
@@ -108,12 +64,9 @@ def chunk_text(start,end,special_tokens,input_path):
     pattern=b"|".join([re.escape(token.encode("utf-8")) for token in special_tokens])
     regex=re.compile(pattern)
     chunks=re.split(regex,chunk_block)
-    chunks=[seq for seq in chunks]
-    final_chunks=[]
     for chunk in chunks:
         if chunk:
-            final_chunks.append(chunk)
-    return final_chunks
+            yield chunk
 
 def process_chunk(start,end,special_tokens,input_path):
     pair_positions=defaultdict(list)
@@ -129,10 +82,10 @@ def process_chunk(start,end,special_tokens,input_path):
     
     token_idx=start
     for text in texts:
-        text_split=pattern.findall(text.decode("utf-8",errors='ignore'))
+        text_split=pattern.finditer(text.decode("utf-8",errors='ignore'))
 
         for token in text_split:
-            token=token.encode("utf-8")
+            token=token.group().encode("utf-8")
             prev_token=None
             for c in token:
                 token_dict[token_idx]=c
@@ -163,17 +116,12 @@ def BPE_init(
         vocab_tot+=1
 
     with open(input_path,"rb") as f:
-        last_time=time.time()
-        start_time=last_time
         num_processes = 16
         boundaries = find_chunk_boundaries(f, num_processes, b"<|endoftext|>")
         
         tasks=[]
         for start, end in zip(boundaries[:-1], boundaries[1:]):
             tasks.append((start,end,special_tokens,input_path))
-
-        this_time=time.time()
-        last_time=this_time
         
         global_pair_positions=defaultdict(list)
         global_token_dict=defaultdict(int)
@@ -203,13 +151,6 @@ def BPE_init(
                 # Merge next and prev dictionaries
                 global_next.update(next)
                 global_prev.update(prev)
-                
-
-                this_time=time.time()
-                last_time=this_time
-                
-
-        end_time=time.time()
 
     return global_pair_positions,global_token_dict,global_pair_counter,global_next,global_prev
     
@@ -337,7 +278,10 @@ def BPE_merge(pair_positions,token_dict,pair_counter,next,prev,heap,vocab_tot):
 
 def BPE(input_path:str,vocab_size:int,special_tokens:list[str]):
     vocab_tot=256
+    #print("Memory before BPE_init:", tracemalloc.get_traced_memory()[0] / 1024 / 1024, "MB")
     result=BPE_init(input_path,vocab_size,special_tokens,vocab_tot)
+    #print("Initialization done")
+    #print("Memory after BPE_init:", tracemalloc.get_traced_memory()[0] / 1024 / 1024, "MB")
     pair_positions=result[0]
     token_dict=result[1]
     pair_counter=result[2]
@@ -348,6 +292,8 @@ def BPE(input_path:str,vocab_size:int,special_tokens:list[str]):
     for pair in pair_counter:
         count=pair_counter[pair]
         heapq.heappush(heap,(-count,pair))
+    #print("Heap initialization done")
+    #print("Memory after heap initialization:", tracemalloc.get_traced_memory()[0] / 1024 / 1024, "MB")
 
     while vocab_tot<vocab_size-1:
         if not heap:
@@ -360,13 +306,57 @@ def BPE(input_path:str,vocab_size:int,special_tokens:list[str]):
     merge_list_bytes=[]
     for pair in merge_list:
         merge_list_bytes.append((int2utf[pair[0]],int2utf[pair[1]]))
+    #print("Memory after BPE merge:", tracemalloc.get_traced_memory()[0] / 1024 / 1024, "MB")
+    #print("Memory peak:", tracemalloc.get_traced_memory()[1] / 1024 / 1024, "MB")
     return int2utf,merge_list_bytes
 
+def export2file(vocabulary,bytes_merge_list):
+    import os, json
+    out_dir = "data"
+    os.makedirs(out_dir, exist_ok=True)
+    vocab_path = os.path.join(out_dir, "vocab32000.json")
+    merges_path = os.path.join(out_dir, "merge32000.txt")
+    
+    print(f"Writing outputs to: {os.path.abspath(vocab_path)} and {os.path.abspath(merges_path)}")
+    print(f"Vocab items: {len(vocabulary)}, Merges: {len(bytes_merge_list)}")
+    
+    with open(vocab_path, "w", encoding="utf-8") as f:
+        vocab_dict = {}
+        for vocab_index, vocab_item in vocabulary.items():
+            if isinstance(vocab_item, (bytes, bytearray)):
+                vocab_dict[str(vocab_index)] = vocab_item.decode("utf-8", errors="ignore")
+            else:
+                vocab_dict[str(vocab_index)] = str(vocab_item)
+        json.dump(vocab_dict, f, ensure_ascii=False, indent=4)
+    
+    with open(merges_path, "w", encoding="utf-8") as f:
+        for merge in bytes_merge_list:
+            if isinstance(merge[0], (bytes, bytearray)):
+                a = merge[0].decode("utf-8", errors="ignore")
+            else:
+                a = str(merge[0])
+            
+            if isinstance(merge[1], (bytes, bytearray)):
+                b = merge[1].decode("utf-8", errors="ignore")
+            else:
+                b = str(merge[1])
+            
+            f.write(f"{a} {b}\n")
+    
+    print("Files exported successfully!")
+
 if __name__ == "__main__":
-    input_path="data/corpus.en"
-    vocab_size=500
+    #tracemalloc.start()
+
+    input_path="data/owt_valid.txt"#TinyStoriesV2-GPT4-valid.txt" 
+    vocab_size=32000
     special_tokens=["<|endoftext|>"]
     time_start=time.time()
-    BPE(input_path,vocab_size,special_tokens)
+    print("Training begin")
+    result=BPE(input_path,vocab_size,special_tokens)
+    vocabulary,bytes_merge_list=result
     time_end=time.time()
     print(f"Total time: {time_end-time_start} seconds")
+    
+    # export vocabulary and bytes_merge_list to json and txt file
+    export2file(vocabulary,bytes_merge_list)
