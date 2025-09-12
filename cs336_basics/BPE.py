@@ -348,8 +348,8 @@ def export2file(vocabulary,bytes_merge_list):
 if __name__ == "__main__":
     #tracemalloc.start()
 
-    input_path="data/owt_valid.txt"#TinyStoriesV2-GPT4-valid.txt" 
-    vocab_size=32000
+    input_path="data/5M.txt"#TinyStoriesV2-GPT4-valid.txt" 
+    vocab_size=1000
     special_tokens=["<|endoftext|>"]
     time_start=time.time()
     print("Training begin")

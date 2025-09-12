@@ -24,6 +24,7 @@ and the environment will be automatically solved and activated when necessary.
 
 ```sh
 uv config set --pypi-index-url https://pypi.tuna.tsinghua.edu.cn/simple/
+export UV_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple/"
 uv run pytest
 ```
 
