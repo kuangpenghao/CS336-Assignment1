@@ -61,9 +61,9 @@ def chunk_text(start,end,special_tokens,input_path):
     with open(input_path,"rb") as f:
         f.seek(start)
         chunk_block=f.read(end-start)
-    pattern=b"|".join([re.escape(token.encode("utf-8")) for token in special_tokens])
-    regex=re.compile(pattern)
-    chunks=re.split(regex,chunk_block)
+    pattern=b"("+b"|".join([regex.escape(token.encode("utf-8")) for token in special_tokens])+b")"
+    regex_chunk=regex.compile(pattern)
+    chunks=regex.split(regex_chunk,chunk_block)
     for chunk in chunks:
         if chunk:
             yield chunk
@@ -78,14 +78,21 @@ def process_chunk(start,end,special_tokens,input_path):
     texts=chunk_text(start,end,special_tokens,input_path)
 
     GPT2_SPLIT_PATTERN = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
-    pattern=regex.compile(GPT2_SPLIT_PATTERN,flags=regex.UNICODE)
+    special_tokens_pattern = "|".join([re.escape(token) for token in special_tokens])
+    pattern = f"({special_tokens_pattern})|{GPT2_SPLIT_PATTERN}"
+    pattern = regex.compile(pattern, flags=regex.UNICODE)
     
     token_idx=start
     for text in texts:
         text_split=pattern.finditer(text.decode("utf-8",errors='ignore'))
 
         for token in text_split:
-            token=token.group().encode("utf-8")
+            token_str=token.group()
+            token=token_str.encode("utf-8")
+            if token_str in special_tokens:
+                token_idx+=len(token)
+                continue
+
             prev_token=None
             for c in token:
                 token_dict[token_idx]=c
@@ -106,7 +113,7 @@ def BPE_init(
         vocab_size:int,
         special_tokens:list[str],
         vocab_tot
-    ):#->Tuple[DefaultDict[list],Dict, Dict,list,Dict,Dict]:
+    ):
     for i in range(256):
         utf2int[bytes([i])]=i
         int2utf[i]=bytes([i])
@@ -348,8 +355,8 @@ def export2file(vocabulary,bytes_merge_list):
 if __name__ == "__main__":
     #tracemalloc.start()
 
-    input_path="data/5M.txt"#TinyStoriesV2-GPT4-valid.txt" 
-    vocab_size=1000
+    input_path="data/simple.txt"#TinyStoriesV2-GPT4-valid.txt" 
+    vocab_size=280
     special_tokens=["<|endoftext|>"]
     time_start=time.time()
     print("Training begin")
