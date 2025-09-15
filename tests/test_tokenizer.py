@@ -15,7 +15,6 @@ from .common import FIXTURES_PATH, gpt2_bytes_to_unicode
 VOCAB_PATH = FIXTURES_PATH / "gpt2_vocab.json"
 MERGES_PATH = FIXTURES_PATH / "gpt2_merges.txt"
 
-
 def memory_limit(max_mem):
     def decorator(f):
         def wrapper(*args, **kwargs):
@@ -71,6 +70,9 @@ def get_tokenizer_from_vocab_merges_path(
         )
         for merge_token_1, merge_token_2 in gpt2_bpe_merges
     ]
+    #print(f"{list(vocab.items())}")
+    #print(f"{merges}")
+    #return vocab, merges
     return get_tokenizer(vocab, merges, special_tokens)
 
 
@@ -222,6 +224,7 @@ def test_roundtrip_unicode_string_with_special_tokens():
     )
     test_string = "Héllò hôw <|endoftext|><|endoftext|> are ü? 🙃<|endoftext|>"
     encoded_ids = tokenizer.encode(test_string)
+    #print(f"encoded_ids:{encoded_ids}")
     tokenized_string = [tokenizer.decode([x]) for x in encoded_ids]
     # Ensure the special <|endoftext|> token is preserved
     assert tokenized_string.count("<|endoftext|>") == 3
@@ -462,3 +465,4 @@ def _encode(tokenizer, text):
     for just this function. We set the memory limit to 1MB.
     """
     return tokenizer.encode(text)
+    

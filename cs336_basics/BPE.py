@@ -1,6 +1,6 @@
 from collections import defaultdict
 import os
-from typing import BinaryIO, Tuple, Dict, DefaultDict
+from typing import BinaryIO
 import multiprocessing
 import re
 import heapq
@@ -57,10 +57,7 @@ def find_chunk_boundaries(
     # Make sure all boundaries are unique, but might be fewer than desired_num_chunks
     return sorted(set(chunk_boundaries))
 
-def chunk_text(start,end,special_tokens,input_path):
-    with open(input_path,"rb") as f:
-        f.seek(start)
-        chunk_block=f.read(end-start)
+def chunk_text(chunk_block,special_tokens):
     pattern=b"("+b"|".join([regex.escape(token.encode("utf-8")) for token in special_tokens])+b")"
     regex_chunk=regex.compile(pattern)
     chunks=regex.split(regex_chunk,chunk_block)
@@ -75,12 +72,17 @@ def process_chunk(start,end,special_tokens,input_path):
     next=defaultdict(int)
     prev=defaultdict(int)
 
-    texts=chunk_text(start,end,special_tokens,input_path)
+    with open(input_path,"rb") as f:
+        f.seek(start)
+        chunk_block=f.read(end-start)
+    
+    texts=chunk_text(chunk_block,special_tokens)
 
     GPT2_SPLIT_PATTERN = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
     special_tokens_pattern = "|".join([re.escape(token) for token in special_tokens])
     pattern = f"({special_tokens_pattern})|{GPT2_SPLIT_PATTERN}"
     pattern = regex.compile(pattern, flags=regex.UNICODE)
+    ''''''
     
     token_idx=start
     for text in texts:
