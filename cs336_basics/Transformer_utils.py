@@ -1,0 +1,44 @@
+import torch
+import torch.nn as nn
+
+class Linear_Transform(nn.Module):
+    def __init__(self,in_features:int,out_features:int,device=None,dtype=None):
+        super(Linear_Transform,self).__init__()
+        self.linear_matrix=torch.empty(in_features,
+                                       out_features,
+                                       device=device,
+                                       dtype=dtype)
+        nn.init.trunc_normal_(self.linear_matrix,mean=0,std=0.02)
+    
+    def forward(self,x:torch.Tensor)->torch.Tensor:
+        return torch.matmul(x,self.linear_matrix)
+
+class Generate_Embeddings(nn.Module):
+    def __init__(self,number_embeddings:int,embedding_dim:int,device=None,dtype=None):
+        super(Generate_Embeddings,self).__init__()
+        self.embedding_matrix=torch.empty(number_embeddings,
+                                          embedding_dim,
+                                          device=device,
+                                          dtype=dtype)
+        nn.init.trunc_normal_(self.embedding_matrix,mean=0,std=0.02)
+    def forward(self,token_ids:torch.Tensor)->torch.Tensor:
+        return self.embedding_matrix[token_ids]
+
+class RMSNorm(nn.Module):
+    def __init__(self,d_model:int,eps:float=1e-5,device=None,dtype=None):
+        super(RMSNorm,self).__init__()
+        self.eps=eps
+        self.g=nn.Parameter(torch.ones(d_model,device=device,dtype=dtype))
+
+    def _get_rms(self,x:torch.Tensor)->torch.Tensor:
+        sum_square=torch.sum(x**2,dim=-1,keepdim=True)
+        mean_square=sum_square/x.shape[-1]
+        return torch.sqrt(mean_square+self.eps)
+    
+    def forward(self,x:torch.Tensor)->torch.Tensor:
+        ori_dtype=x.dtype
+        x=x.to(torch.float32)
+        rms=self._get_rms(x)
+        x_normed=x/rms
+        x_normed=x_normed.to(ori_dtype)
+        return x_normed*self.g
