@@ -10,9 +10,10 @@ from jaxtyping import Bool, Float, Int
 from torch import Tensor
 
 from cs336_basics.BPE import BPE
-from cs336_basics.BPE_Tokenizer import BPE_Tokenizer
+from cs336_basics.BPE_Tokenizer import *
 from cs336_basics.Transformer_utils import *
-from cs336_basics.Feed_Forward import Feed_Forward_Network
+from cs336_basics.Feed_Forward import *
+from cs336_basics.RoPE import *
 
 
 def run_linear(
@@ -216,7 +217,8 @@ def run_rope(
     Returns:
         Float[Tensor, " ... sequence_length d_k"]: Tensor with RoPEd input.
     """
-    raise NotImplementedError
+    rope=RoPE(theta,d_k,max_seq_len,device=in_query_or_key.device)
+    return rope(in_query_or_key,token_positions)
 
 
 def run_transformer_block(
