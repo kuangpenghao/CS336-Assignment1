@@ -54,6 +54,8 @@ class Sigmoid_Activation(nn.Module):
 class SiLU_Activation(nn.Module):
     def __init__(self):
         super(SiLU_Activation,self).__init__()
+        self.sigmoid_activator=Sigmoid_Activation()
 
     def forward(self,x:torch.Tensor)->torch.Tensor:
-        return x*torch.sigmoid(x)
+        sigmoid_x=self.sigmoid_activator(x)
+        return x*sigmoid_x
