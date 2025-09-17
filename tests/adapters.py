@@ -12,6 +12,7 @@ from torch import Tensor
 from cs336_basics.BPE import BPE
 from cs336_basics.BPE_Tokenizer import BPE_Tokenizer
 from cs336_basics.Transformer_utils import *
+from cs336_basics.Feed_Forward import Feed_Forward_Network
 
 
 def run_linear(
@@ -93,7 +94,12 @@ def run_swiglu(
     # swiglu.w1.weight.data = w1_weight
     # swiglu.w2.weight.data = w2_weight
     # swiglu.w3.weight.data = w3_weight
-    raise NotImplementedError
+    swiglu=Feed_Forward_Network(d_model,d_ff,device=in_features.device,dtype=in_features.dtype)
+    swiglu.linear_w1.linear_matrix=torch.transpose(w1_weight,0,1)
+    swiglu.linear_w2.linear_matrix=torch.transpose(w2_weight,0,1)
+    swiglu.linear_w3.linear_matrix=torch.transpose(w3_weight,0,1)
+    out=swiglu(in_features)
+    return out
 
 
 def run_scaled_dot_product_attention(

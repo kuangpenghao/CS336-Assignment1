@@ -42,3 +42,18 @@ class RMSNorm(nn.Module):
         x_normed=x/rms
         x_normed=x_normed.to(ori_dtype)
         return x_normed*self.g
+
+class Sigmoid_Activation(nn.Module):
+    def __init__(self):
+        super(Sigmoid_Activation,self).__init__()
+
+    def forward(self,x:torch.Tensor)->torch.Tensor:
+        denominator=1+torch.exp(-x)
+        return 1/denominator
+
+class SiLU_Activation(nn.Module):
+    def __init__(self):
+        super(SiLU_Activation,self).__init__()
+
+    def forward(self,x:torch.Tensor)->torch.Tensor:
+        return x*torch.sigmoid(x)
