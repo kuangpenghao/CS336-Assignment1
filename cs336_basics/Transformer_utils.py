@@ -59,3 +59,15 @@ class SiLU_Activation(nn.Module):
     def forward(self,x:torch.Tensor)->torch.Tensor:
         sigmoid_x=self.sigmoid_activator(x)
         return x*sigmoid_x
+
+class Softmax_Activation(nn.Module):
+    def __init__(self,dim:int=-1):
+        super(Softmax_Activation,self).__init__()
+        self.dim=dim
+
+    def forward(self,x:torch.Tensor)->torch.Tensor:
+        #shape of x:(bsz,seq_len,d_k)
+        x_max=torch.max(x,dim=self.dim,keepdim=True).values
+        x_exp=torch.exp(x-x_max)
+        x_exp_sum=torch.sum(x_exp,dim=self.dim,keepdim=True)
+        return x_exp/x_exp_sum
