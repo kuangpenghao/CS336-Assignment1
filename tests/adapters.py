@@ -14,6 +14,7 @@ from cs336_basics.BPE_Tokenizer import *
 from cs336_basics.Transformer_utils import *
 from cs336_basics.Feed_Forward import *
 from cs336_basics.RoPE import *
+from cs336_basics.Attention import *
 
 
 def run_linear(
@@ -121,7 +122,9 @@ def run_scaled_dot_product_attention(
     Returns:
         Float[Tensor, " ... queries d_v"]: Output of SDPA
     """
-    raise NotImplementedError
+    SDPA=Scaled_dot_Product_Attention()
+    out=SDPA(Q,K,V,mask)
+    return out
 
 
 def run_multihead_self_attention(
@@ -155,7 +158,15 @@ def run_multihead_self_attention(
         Float[Tensor, " ... sequence_length d_out"]: Tensor with the output of running your optimized, batched multi-headed attention
         implementation with the given QKV projection weights and input features.
     """
-    raise NotImplementedError
+    multi_head_attn=Multihead_Attention(d_model=d_model,
+                                        num_heads=num_heads,
+                                        token_positions=None)
+    multi_head_attn.q_proj.linear_matrix=torch.transpose(q_proj_weight,0,1)
+    multi_head_attn.k_proj.linear_matrix=torch.transpose(k_proj_weight,0,1)
+    multi_head_attn.v_proj.linear_matrix=torch.transpose(v_proj_weight,0,1)
+    multi_head_attn.o_proj.linear_matrix=torch.transpose(o_proj_weight,0,1)
+    out=multi_head_attn(in_features)
+    return out
 
 
 def run_multihead_self_attention_with_rope(
@@ -195,7 +206,17 @@ def run_multihead_self_attention_with_rope(
         Float[Tensor, " ... sequence_length d_out"]: Tensor with the output of running your optimized, batched multi-headed attention
         implementation with the given QKV projection weights and input features.
     """
-    raise NotImplementedError
+    multi_head_attn=Multihead_Attention(d_model=d_model,
+                                        num_heads=num_heads,
+                                        max_seq_length=max_seq_len,
+                                        theta=theta,
+                                        token_positions=token_positions)
+    multi_head_attn.q_proj.linear_matrix=torch.transpose(q_proj_weight,0,1)
+    multi_head_attn.k_proj.linear_matrix=torch.transpose(k_proj_weight,0,1)
+    multi_head_attn.v_proj.linear_matrix=torch.transpose(v_proj_weight,0,1)
+    multi_head_attn.o_proj.linear_matrix=torch.transpose(o_proj_weight,0,1)
+    out=multi_head_attn(in_features)
+    return out
 
 
 def run_rope(

@@ -74,6 +74,9 @@ class NumpySnapshot:
         # Load the snapshot
         expected_arrays = dict(np.load(snapshot_path))
 
+        #print("actual:", arrays_dict)
+        #print("expected_arrays:", expected_arrays)
+
         # Verify all expected arrays are present
         missing_keys = set(arrays_dict.keys()) - set(expected_arrays.keys())
         if missing_keys:
@@ -138,6 +141,9 @@ class Snapshot:
         # Load the snapshot
         with open(snapshot_path, "rb") as f:
             expected_data = pickle.load(f)
+
+        #print("actual:", actual)
+        #print("expected_data:", expected_data)
 
         if isinstance(actual, dict):
             for key in actual:

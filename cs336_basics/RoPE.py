@@ -22,8 +22,10 @@ class RoPE(nn.Module):
 
     def forward(self,x:torch.Tensor,token_positions:torch.Tensor)->torch.Tensor:
         #x:(bsz,seq_len,d_k)
-        bsz,seq_len,d_k=x.shape
-        x_splited=x.reshape(bsz,seq_len,d_k//2,2)
+        bsz=x.shape[0]
+        seq_len=x.shape[-2]
+        d_k=x.shape[-1]
+        x_splited=x.reshape(*x.shape[:-1],d_k//2,2)
 
         #odd transform:(1,seq_len,d_k/2,2),(cos,-sin)
         cos_chunk=self.cos_values[:,token_positions,:]
@@ -33,6 +35,7 @@ class RoPE(nn.Module):
 
         x_rotated_odd=torch.sum(x_splited*odd_transform,dim=-1)#(bsz,seq_len,d_k//2)
         x_rotated_even=torch.sum(x_splited*even_transform,dim=-1)#(bsz,seq_len,d_k//2)
-        x_rotated=torch.stack([x_rotated_odd,x_rotated_even],dim=-1).reshape(bsz,seq_len,d_k) 
+        stacked_x=torch.stack([x_rotated_odd,x_rotated_even],dim=-1)
+        x_rotated=stacked_x.reshape(*stacked_x.shape[:-2],d_k) 
         
         return x_rotated
