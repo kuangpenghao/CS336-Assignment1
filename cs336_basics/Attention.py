@@ -81,7 +81,6 @@ class Multihead_Attention(nn.Module):
             K=self.rope(K,self.token_positions)
 
         mask=Causal_Mask(seq_len,device=x.device).generate()
-        #print(f"mask:\n{mask}")
         mask=mask.unsqueeze(0).unsqueeze(1)
 
         attn_output=self.sdpa(Q,K,V,mask)
@@ -89,22 +88,3 @@ class Multihead_Attention(nn.Module):
         attn_output=self.o_proj(attn_output)
 
         return attn_output
-
-if __name__=="__main__":
-    bsz=2
-    seq_len=6
-    d_model=8
-    n_heads=2
-    max_seq_length=10
-    theta=10000
-
-    x=torch.randn(bsz,seq_len,d_model)
-    token_positions=torch.arange(seq_len).unsqueeze(0)
-    #print(f"x shape:{x.shape}")
-
-    mha=Multihead_Attention(d_model=d_model,
-                            num_heads=n_heads,
-                            max_seq_length=None,
-                            theta=None,
-                            token_positions=token_positions)
-    out=mha(x)

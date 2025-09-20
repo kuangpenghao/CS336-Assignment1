@@ -7,7 +7,7 @@ class Linear_Transform(nn.Module):
         self.linear_matrix=torch.empty(in_features,
                                        out_features,
                                        device=device,
-                                       dtype=dtype)
+                                       dtype=torch.float32)
         nn.init.trunc_normal_(self.linear_matrix,mean=0,std=0.02)
     
     def forward(self,x:torch.Tensor)->torch.Tensor:
@@ -19,7 +19,7 @@ class Generate_Embeddings(nn.Module):
         self.embedding_matrix=torch.empty(number_embeddings,
                                           embedding_dim,
                                           device=device,
-                                          dtype=dtype)
+                                          dtype=torch.float32)
         nn.init.trunc_normal_(self.embedding_matrix,mean=0,std=0.02)
     def forward(self,token_ids:torch.Tensor)->torch.Tensor:
         return self.embedding_matrix[token_ids]
@@ -28,7 +28,7 @@ class RMSNorm(nn.Module):
     def __init__(self,d_model:int,eps:float=1e-5,device=None,dtype=None):
         super(RMSNorm,self).__init__()
         self.eps=eps
-        self.g=nn.Parameter(torch.ones(d_model,device=device,dtype=dtype))
+        self.g=nn.Parameter(torch.ones(d_model,device=device,dtype=torch.float32))
 
     def _get_rms(self,x:torch.Tensor)->torch.Tensor:
         sum_square=torch.sum(x**2,dim=-1,keepdim=True)

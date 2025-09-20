@@ -15,6 +15,7 @@ from cs336_basics.Transformer_utils import *
 from cs336_basics.Feed_Forward import *
 from cs336_basics.RoPE import *
 from cs336_basics.Attention import *
+from cs336_basics.Transformer_LM import *
 
 
 def run_linear(
@@ -312,7 +313,30 @@ def run_transformer_block(
         Float[Tensor, "batch sequence_length d_model"] Tensor with the output of
         running the Transformer block on the input features while using RoPE.
     """
-    raise NotImplementedError
+    positions=torch.arange(in_features.shape[1],device=in_features.device).unsqueeze(0)
+    transformer_block=Transformer_Block(d_model=d_model,
+                                        num_heads=num_heads,
+                                        d_ff=d_ff,
+                                        max_seq_length=max_seq_len,
+                                        theta=theta,
+                                        dtype=in_features.dtype,
+                                        device=in_features.device,
+                                        token_positions=positions)
+    
+    transformer_block.Multihead_Attn.q_proj.linear_matrix=weights["attn.q_proj.weight"].transpose(0,1)
+    transformer_block.Multihead_Attn.k_proj.linear_matrix=weights["attn.k_proj.weight"].transpose(0,1)
+    transformer_block.Multihead_Attn.v_proj.linear_matrix=weights["attn.v_proj.weight"].transpose(0,1)
+    transformer_block.Multihead_Attn.o_proj.linear_matrix=weights["attn.output_proj.weight"].transpose(0,1)
+
+    transformer_block.RMSNorm_Attn.g=torch.nn.Parameter(weights["ln1.weight"])
+    transformer_block.RMSNorm_FF.g=torch.nn.Parameter(weights["ln2.weight"])
+
+    transformer_block.Feed_Forward.linear_w1.linear_matrix=weights["ffn.w1.weight"].transpose(0,1)
+    transformer_block.Feed_Forward.linear_w2.linear_matrix=weights["ffn.w2.weight"].transpose(0,1)
+    transformer_block.Feed_Forward.linear_w3.linear_matrix=weights["ffn.w3.weight"].transpose(0,1)
+
+    out=transformer_block(in_features)
+    return out
 
 
 def run_transformer_lm(
@@ -394,8 +418,38 @@ def run_transformer_lm(
         Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
         next-word distribution for each token.
     """
-    raise NotImplementedError
+    positions=torch.arange(in_indices.shape[1],device=in_indices.device).unsqueeze(0)
+    transformer_lm=Transformer_LM(d_model=d_model,
+                                  num_heads=num_heads,
+                                  d_ff=d_ff,
+                                  vocab_size=vocab_size,
+                                  num_layers=num_layers,
+                                  max_seq_length=context_length,
+                                  theta=rope_theta,
+                                  dtype=in_indices.dtype,
+                                  device=in_indices.device,
+                                  token_positions=positions)
+    
+    transformer_lm.embeddings.embedding_matrix=weights["token_embeddings.weight"]
+    transformer_lm.final_layer.linear_matrix=weights["lm_head.weight"].transpose(0,1)
+    transformer_lm.final_norm.g=torch.nn.Parameter(weights["ln_final.weight"])
 
+    for i in range(num_layers):
+        transformer_lm.transformer_blocks[i].Multihead_Attn.q_proj.linear_matrix=weights[f"layers.{i}.attn.q_proj.weight"].transpose(0,1)
+        transformer_lm.transformer_blocks[i].Multihead_Attn.k_proj.linear_matrix=weights[f"layers.{i}.attn.k_proj.weight"].transpose(0,1)
+        transformer_lm.transformer_blocks[i].Multihead_Attn.v_proj.linear_matrix=weights[f"layers.{i}.attn.v_proj.weight"].transpose(0,1)
+        transformer_lm.transformer_blocks[i].Multihead_Attn.o_proj.linear_matrix=weights[f"layers.{i}.attn.output_proj.weight"].transpose(0,1)
+
+        transformer_lm.transformer_blocks[i].RMSNorm_Attn.g=torch.nn.Parameter(weights[f"layers.{i}.ln1.weight"])
+        transformer_lm.transformer_blocks[i].RMSNorm_FF.g=torch.nn.Parameter(weights[f"layers.{i}.ln2.weight"])
+
+        transformer_lm.transformer_blocks[i].Feed_Forward.linear_w1.linear_matrix=weights[f"layers.{i}.ffn.w1.weight"].transpose(0,1)
+        transformer_lm.transformer_blocks[i].Feed_Forward.linear_w2.linear_matrix=weights[f"layers.{i}.ffn.w2.weight"].transpose(0,1)
+        transformer_lm.transformer_blocks[i].Feed_Forward.linear_w3.linear_matrix=weights[f"layers.{i}.ffn.w3.weight"].transpose(0,1)
+
+    out=transformer_lm(in_indices)
+    return out
+    
 
 def run_rmsnorm(
     d_model: int,
@@ -434,7 +488,9 @@ def run_silu(in_features: Float[Tensor, " ..."]) -> Float[Tensor, " ..."]:
         Float[Tensor,"..."]: of with the same shape as `in_features` with the output of applying
         SiLU to each element.
     """
-    raise NotImplementedError
+    silu=SiLU_Activation()
+    out=silu(in_features)
+    return out
 
 
 def run_get_batch(
