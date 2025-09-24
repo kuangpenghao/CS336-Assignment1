@@ -39,7 +39,7 @@ def run_linear(
     """
 
     linear=Linear_Transform(d_in,d_out,device=in_features.device,dtype=in_features.dtype)
-    linear.linear_matrix=weights.T
+    linear.linear_matrix.data.copy_(weights.transpose(0,1))
     out=linear(in_features)
     return out
 
@@ -99,9 +99,9 @@ def run_swiglu(
     # swiglu.w2.weight.data = w2_weight
     # swiglu.w3.weight.data = w3_weight
     swiglu=Feed_Forward_Network(d_model,d_ff,device=in_features.device,dtype=in_features.dtype)
-    swiglu.linear_w1.linear_matrix=torch.transpose(w1_weight,0,1)
-    swiglu.linear_w2.linear_matrix=torch.transpose(w2_weight,0,1)
-    swiglu.linear_w3.linear_matrix=torch.transpose(w3_weight,0,1)
+    swiglu.linear_w1.linear_matrix.data.copy_(torch.transpose(w1_weight,0,1))
+    swiglu.linear_w2.linear_matrix.data.copy_(torch.transpose(w2_weight,0,1))
+    swiglu.linear_w3.linear_matrix.data.copy_(torch.transpose(w3_weight,0,1))
     out=swiglu(in_features)
     return out
 
@@ -163,10 +163,10 @@ def run_multihead_self_attention(
     multi_head_attn=Multihead_Attention(d_model=d_model,
                                         num_heads=num_heads,
                                         token_positions=None)
-    multi_head_attn.q_proj.linear_matrix=torch.transpose(q_proj_weight,0,1)
-    multi_head_attn.k_proj.linear_matrix=torch.transpose(k_proj_weight,0,1)
-    multi_head_attn.v_proj.linear_matrix=torch.transpose(v_proj_weight,0,1)
-    multi_head_attn.o_proj.linear_matrix=torch.transpose(o_proj_weight,0,1)
+    multi_head_attn.q_proj.linear_matrix.data.copy_(torch.transpose(q_proj_weight,0,1))
+    multi_head_attn.k_proj.linear_matrix.data.copy_(torch.transpose(k_proj_weight,0,1))
+    multi_head_attn.v_proj.linear_matrix.data.copy_(torch.transpose(v_proj_weight,0,1))
+    multi_head_attn.o_proj.linear_matrix.data.copy_(torch.transpose(o_proj_weight,0,1))
     out=multi_head_attn(in_features)
     return out
 
@@ -213,10 +213,10 @@ def run_multihead_self_attention_with_rope(
                                         max_seq_length=max_seq_len,
                                         theta=theta,
                                         token_positions=token_positions)
-    multi_head_attn.q_proj.linear_matrix=torch.transpose(q_proj_weight,0,1)
-    multi_head_attn.k_proj.linear_matrix=torch.transpose(k_proj_weight,0,1)
-    multi_head_attn.v_proj.linear_matrix=torch.transpose(v_proj_weight,0,1)
-    multi_head_attn.o_proj.linear_matrix=torch.transpose(o_proj_weight,0,1)
+    multi_head_attn.q_proj.linear_matrix.data.copy_(torch.transpose(q_proj_weight,0,1))
+    multi_head_attn.k_proj.linear_matrix.data.copy_(torch.transpose(k_proj_weight,0,1))
+    multi_head_attn.v_proj.linear_matrix.data.copy_(torch.transpose(v_proj_weight,0,1))
+    multi_head_attn.o_proj.linear_matrix.data.copy_(torch.transpose(o_proj_weight,0,1))
     out=multi_head_attn(in_features)
     return out
 
@@ -324,17 +324,17 @@ def run_transformer_block(
                                         device=in_features.device,
                                         token_positions=positions)
     
-    transformer_block.Multihead_Attn.q_proj.linear_matrix=weights["attn.q_proj.weight"].transpose(0,1)
-    transformer_block.Multihead_Attn.k_proj.linear_matrix=weights["attn.k_proj.weight"].transpose(0,1)
-    transformer_block.Multihead_Attn.v_proj.linear_matrix=weights["attn.v_proj.weight"].transpose(0,1)
-    transformer_block.Multihead_Attn.o_proj.linear_matrix=weights["attn.output_proj.weight"].transpose(0,1)
+    transformer_block.Multihead_Attn.q_proj.linear_matrix.data.copy_(weights["attn.q_proj.weight"].transpose(0,1))
+    transformer_block.Multihead_Attn.k_proj.linear_matrix.data.copy_(weights["attn.k_proj.weight"].transpose(0,1))
+    transformer_block.Multihead_Attn.v_proj.linear_matrix.data.copy_(weights["attn.v_proj.weight"].transpose(0,1))
+    transformer_block.Multihead_Attn.o_proj.linear_matrix.data.copy_(weights["attn.output_proj.weight"].transpose(0,1))
 
     transformer_block.RMSNorm_Attn.g=torch.nn.Parameter(weights["ln1.weight"])
     transformer_block.RMSNorm_FF.g=torch.nn.Parameter(weights["ln2.weight"])
 
-    transformer_block.Feed_Forward.linear_w1.linear_matrix=weights["ffn.w1.weight"].transpose(0,1)
-    transformer_block.Feed_Forward.linear_w2.linear_matrix=weights["ffn.w2.weight"].transpose(0,1)
-    transformer_block.Feed_Forward.linear_w3.linear_matrix=weights["ffn.w3.weight"].transpose(0,1)
+    transformer_block.Feed_Forward.linear_w1.linear_matrix.data.copy_(weights["ffn.w1.weight"].transpose(0,1))
+    transformer_block.Feed_Forward.linear_w2.linear_matrix.data.copy_(weights["ffn.w2.weight"].transpose(0,1))
+    transformer_block.Feed_Forward.linear_w3.linear_matrix.data.copy_(weights["ffn.w3.weight"].transpose(0,1))
 
     out=transformer_block(in_features)
     return out
@@ -432,21 +432,21 @@ def run_transformer_lm(
                                   token_positions=positions)
     
     transformer_lm.embeddings.embedding_matrix=weights["token_embeddings.weight"]
-    transformer_lm.final_layer.linear_matrix=weights["lm_head.weight"].transpose(0,1)
+    transformer_lm.final_layer.linear_matrix.data.copy_(weights["lm_head.weight"].transpose(0,1))
     transformer_lm.final_norm.g=torch.nn.Parameter(weights["ln_final.weight"])
 
     for i in range(num_layers):
-        transformer_lm.transformer_blocks[i].Multihead_Attn.q_proj.linear_matrix=weights[f"layers.{i}.attn.q_proj.weight"].transpose(0,1)
-        transformer_lm.transformer_blocks[i].Multihead_Attn.k_proj.linear_matrix=weights[f"layers.{i}.attn.k_proj.weight"].transpose(0,1)
-        transformer_lm.transformer_blocks[i].Multihead_Attn.v_proj.linear_matrix=weights[f"layers.{i}.attn.v_proj.weight"].transpose(0,1)
-        transformer_lm.transformer_blocks[i].Multihead_Attn.o_proj.linear_matrix=weights[f"layers.{i}.attn.output_proj.weight"].transpose(0,1)
+        transformer_lm.transformer_blocks[i].Multihead_Attn.q_proj.linear_matrix.data.copy_(weights[f"layers.{i}.attn.q_proj.weight"].transpose(0,1))
+        transformer_lm.transformer_blocks[i].Multihead_Attn.k_proj.linear_matrix.data.copy_(weights[f"layers.{i}.attn.k_proj.weight"].transpose(0,1))
+        transformer_lm.transformer_blocks[i].Multihead_Attn.v_proj.linear_matrix.data.copy_(weights[f"layers.{i}.attn.v_proj.weight"].transpose(0,1))
+        transformer_lm.transformer_blocks[i].Multihead_Attn.o_proj.linear_matrix.data.copy_(weights[f"layers.{i}.attn.output_proj.weight"].transpose(0,1))
 
         transformer_lm.transformer_blocks[i].RMSNorm_Attn.g=torch.nn.Parameter(weights[f"layers.{i}.ln1.weight"])
         transformer_lm.transformer_blocks[i].RMSNorm_FF.g=torch.nn.Parameter(weights[f"layers.{i}.ln2.weight"])
 
-        transformer_lm.transformer_blocks[i].Feed_Forward.linear_w1.linear_matrix=weights[f"layers.{i}.ffn.w1.weight"].transpose(0,1)
-        transformer_lm.transformer_blocks[i].Feed_Forward.linear_w2.linear_matrix=weights[f"layers.{i}.ffn.w2.weight"].transpose(0,1)
-        transformer_lm.transformer_blocks[i].Feed_Forward.linear_w3.linear_matrix=weights[f"layers.{i}.ffn.w3.weight"].transpose(0,1)
+        transformer_lm.transformer_blocks[i].Feed_Forward.linear_w1.linear_matrix.data.copy_(weights[f"layers.{i}.ffn.w1.weight"].transpose(0,1))
+        transformer_lm.transformer_blocks[i].Feed_Forward.linear_w2.linear_matrix.data.copy_(weights[f"layers.{i}.ffn.w2.weight"].transpose(0,1))
+        transformer_lm.transformer_blocks[i].Feed_Forward.linear_w3.linear_matrix.data.copy_(weights[f"layers.{i}.ffn.w3.weight"].transpose(0,1))
 
     out=transformer_lm(in_indices)
     return out
@@ -514,7 +514,8 @@ def run_get_batch(
         is the sampled input sequences, and the second tuple item is the corresponding
         language modeling labels.
     """
-    raise NotImplementedError
+    batch_getter=Batch_Getter()
+    return batch_getter.get_batch(dataset,batch_size,context_length,device)
 
 
 def run_softmax(in_features: Float[Tensor, " ..."], dim: int) -> Float[Tensor, " ..."]:
@@ -621,7 +622,8 @@ def run_save_checkpoint(
             we've completed.
         out (str | os.PathLike | BinaryIO | IO[bytes]): Path or file-like object to serialize the model, optimizer, and iteration to.
     """
-    raise NotImplementedError
+    checkpoint_optimizer=Checkpoint_Manager()
+    checkpoint_optimizer.save(model,optimizer,iteration,out)
 
 
 def run_load_checkpoint(
@@ -642,7 +644,8 @@ def run_load_checkpoint(
     Returns:
         int: the previously-serialized number of iterations.
     """
-    raise NotImplementedError
+    checkpoint_manager=Checkpoint_Manager()
+    return checkpoint_manager.load(src,model,optimizer)
 
 
 def get_tokenizer(

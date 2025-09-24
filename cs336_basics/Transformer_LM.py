@@ -78,3 +78,18 @@ class Transformer_LM(nn.Module):
         x=self.final_norm(x)
         linear_score=self.final_layer(x)
         return linear_score
+    
+if __name__=="__main__":
+    lm=Transformer_LM(d_model=512,
+                      num_heads=8,
+                      d_ff=2048,
+                      vocab_size=10000,
+                      num_layers=1,
+                      max_seq_length=128,
+                      theta=100000,
+                      dtype=torch.float32,
+                      device="cpu",
+                      token_positions=torch.arange(128))
+    states=lm.state_dict()
+    for state_key in states:
+        print(state_key,states[state_key].shape)

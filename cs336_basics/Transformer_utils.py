@@ -9,6 +9,7 @@ class Linear_Transform(nn.Module):
                                        device=device,
                                        dtype=torch.float32)
         nn.init.trunc_normal_(self.linear_matrix,mean=0,std=0.02)
+        self.linear_matrix=nn.Parameter(self.linear_matrix)
     
     def forward(self,x:torch.Tensor)->torch.Tensor:
         return torch.matmul(x,self.linear_matrix)
