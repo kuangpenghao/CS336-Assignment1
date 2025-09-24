@@ -71,3 +71,14 @@ class Softmax_Activation(nn.Module):
         x_exp=torch.exp(x-x_max)
         x_exp_sum=torch.sum(x_exp,dim=self.dim,keepdim=True)
         return x_exp/x_exp_sum
+
+class Log_Softmax():
+    def __init__(self,dim:int=-1):
+        self.dim=dim
+
+    def forward(self,x:torch.Tensor)->torch.Tensor:
+        x_max=torch.max(x,dim=self.dim,keepdim=True).values
+        x=x-x_max
+        x_exp=torch.exp(x)
+        x_exp_sum=torch.sum(x_exp,dim=self.dim,keepdim=True)
+        return x-torch.log(x_exp_sum)

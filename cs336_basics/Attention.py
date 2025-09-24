@@ -38,9 +38,10 @@ class Multihead_Attention(nn.Module):
                  num_heads:int,
                  max_seq_length:int=None,
                  theta:int=None,
-                 token_positions:torch.Tensor=None):
+                 token_positions:torch.Tensor=None,
+                 device=None):
         super(Multihead_Attention,self).__init__()
-
+        
         self.d_model=d_model
         self.num_heads=num_heads
         self.d_k=d_model//num_heads
@@ -50,15 +51,15 @@ class Multihead_Attention(nn.Module):
         self.theta=theta
         self.token_positions=token_positions
 
-        self.q_proj=Linear_Transform(d_model,num_heads*self.d_k)
-        self.k_proj=Linear_Transform(d_model,num_heads*self.d_k)
-        self.v_proj=Linear_Transform(d_model,num_heads*self.d_v)
-        self.o_proj=Linear_Transform(num_heads*self.d_v,d_model)
+        self.q_proj=Linear_Transform(d_model,num_heads*self.d_k,device=device)
+        self.k_proj=Linear_Transform(d_model,num_heads*self.d_k,device=device)
+        self.v_proj=Linear_Transform(d_model,num_heads*self.d_v,device=device)
+        self.o_proj=Linear_Transform(num_heads*self.d_v,d_model,device=device)
 
         self.sdpa=Scaled_dot_Product_Attention()
 
         if max_seq_length is not None and theta is not None:
-            self.rope=RoPE(theta,self.d_k,max_seq_length)
+            self.rope=RoPE(theta,self.d_k,max_seq_length,device=device)
         else:
             self.rope=None
 

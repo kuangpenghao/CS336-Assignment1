@@ -17,7 +17,7 @@ class Transformer_Block(nn.Module):
         super(Transformer_Block,self).__init__()
         self.RMSNorm_Attn=RMSNorm(d_model,dtype=dtype,device=device)
         self.RMSNorm_FF=RMSNorm(d_model,dtype=dtype,device=device)
-        self.Multihead_Attn=Multihead_Attention(d_model,num_heads,max_seq_length,theta,token_positions)
+        self.Multihead_Attn=Multihead_Attention(d_model,num_heads,max_seq_length,theta,token_positions,device=device)
         self.Feed_Forward=Feed_Forward_Network(d_model,d_ff,device=device,dtype=dtype)
 
     def forward(self,x:torch.Tensor)->torch.Tensor:

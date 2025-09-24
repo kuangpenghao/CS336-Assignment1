@@ -16,6 +16,7 @@ from cs336_basics.Feed_Forward import *
 from cs336_basics.RoPE import *
 from cs336_basics.Attention import *
 from cs336_basics.Transformer_LM import *
+from cs336_basics.train_utils import *
 
 
 def run_linear(
@@ -549,7 +550,9 @@ def run_cross_entropy(
     Returns:
         Float[Tensor, ""]: The average cross-entropy loss across examples.
     """
-    raise NotImplementedError
+    cross_entropy=Cross_Entropy_Calculator()
+    out=cross_entropy.forward(inputs,targets)
+    return out
 
 
 def run_gradient_clipping(parameters: Iterable[torch.nn.Parameter], max_l2_norm: float) -> None:
@@ -561,14 +564,15 @@ def run_gradient_clipping(parameters: Iterable[torch.nn.Parameter], max_l2_norm:
 
     The gradients of the parameters (parameter.grad) should be modified in-place.
     """
-    raise NotImplementedError
+    clipper=Gradient_Clipper(max_l2_norm)
+    clipper.clip(parameters)
 
 
 def get_adamw_cls() -> Any:
     """
     Returns a torch.optim.Optimizer that implements AdamW.
     """
-    raise NotImplementedError
+    return AdamW_Optimizer
 
 
 def run_get_lr_cosine_schedule(
@@ -596,7 +600,9 @@ def run_get_lr_cosine_schedule(
     Returns:
         Learning rate at the given iteration under the specified schedule.
     """
-    raise NotImplementedError
+    scheduler=Learning_Rate_Scheduler()
+    return scheduler.get_lr(it,max_learning_rate,min_learning_rate,warmup_iters,cosine_cycle_iters)
+    
 
 
 def run_save_checkpoint(
