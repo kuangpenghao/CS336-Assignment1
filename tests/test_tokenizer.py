@@ -70,7 +70,8 @@ def get_tokenizer_from_vocab_merges_path(
         )
         for merge_token_1, merge_token_2 in gpt2_bpe_merges
     ]
-    #print(f"{list(vocab.items())}")
+    #print(vocab)
+    #input("press enter to continue")
     #print(f"{merges}")
     #return vocab, merges
     return get_tokenizer(vocab, merges, special_tokens)

@@ -66,6 +66,7 @@ def chunk_text(chunk_block,special_tokens):
             yield chunk
 
 def process_chunk(start,end,special_tokens,input_path):
+    #print(f"Processing chunk from {start} to {end}")
     pair_positions=defaultdict(list)
     token_dict=defaultdict(int)
     pair_counter=defaultdict(int)
@@ -310,6 +311,8 @@ def BPE(input_path:str,vocab_size:int,special_tokens:list[str]):
         vocab_tot+=1
         pair_merged=BPE_merge(pair_positions,token_dict,pair_counter,next,prev,heap,vocab_tot)
         merge_list.append(pair_merged)
+        #if vocab_tot%100==0 or vocab_tot<300:
+        #    print(f"Current vocab size:{vocab_tot},last merged pair:{pair_merged},total pairs in heap:{len(heap)}")
 
     #change all items in merge list from int to bytes
     merge_list_bytes=[]
@@ -320,52 +323,33 @@ def BPE(input_path:str,vocab_size:int,special_tokens:list[str]):
     return int2utf,merge_list_bytes
 
 def export2file(vocabulary,bytes_merge_list):
-    import os, json
-    out_dir = "data"
-    os.makedirs(out_dir, exist_ok=True)
-    vocab_path = os.path.join(out_dir, "vocab32000.json")
-    merges_path = os.path.join(out_dir, "merge32000.txt")
-    
-    print(f"Writing outputs to: {os.path.abspath(vocab_path)} and {os.path.abspath(merges_path)}")
-    print(f"Vocab items: {len(vocabulary)}, Merges: {len(bytes_merge_list)}")
-    
+    vocab_path = "data/vocab_32000.txt"
+    merges_path = "data/merges_32000.txt"
+    import os
+    os.makedirs("data", exist_ok=True)
+
     with open(vocab_path, "w", encoding="utf-8") as f:
-        vocab_dict = {}
-        for vocab_index, vocab_item in vocabulary.items():
-            if isinstance(vocab_item, (bytes, bytearray)):
-                vocab_dict[str(vocab_index)] = vocab_item.decode("utf-8", errors="ignore")
-            else:
-                vocab_dict[str(vocab_index)] = str(vocab_item)
-        json.dump(vocab_dict, f, ensure_ascii=False, indent=4)
-    
+        f.write(str(vocabulary) + "\n")
+
     with open(merges_path, "w", encoding="utf-8") as f:
-        for merge in bytes_merge_list:
-            if isinstance(merge[0], (bytes, bytearray)):
-                a = merge[0].decode("utf-8", errors="ignore")
-            else:
-                a = str(merge[0])
-            
-            if isinstance(merge[1], (bytes, bytearray)):
-                b = merge[1].decode("utf-8", errors="ignore")
-            else:
-                b = str(merge[1])
-            
-            f.write(f"{a} {b}\n")
-    
-    print("Files exported successfully!")
+        f.write(str(bytes_merge_list) + "\n")
+
+'''
 
 if __name__ == "__main__":
     #tracemalloc.start()
 
-    input_path="data/simple.txt"#TinyStoriesV2-GPT4-valid.txt" 
-    vocab_size=280
+    input_path="data/owt_valid.txt"#5M.txt
+    vocab_size=32000
     special_tokens=["<|endoftext|>"]
     time_start=time.time()
-    print("Training begin")
+    #print("Training begin")
     result=BPE(input_path,vocab_size,special_tokens)
     vocabulary,bytes_merge_list=result
     time_end=time.time()
-    print(f"Total time: {time_end-time_start} seconds")
+    #print(f"Total time: {time_end-time_start} seconds")
     
     # export vocabulary and bytes_merge_list to json and txt file
     export2file(vocabulary,bytes_merge_list)
+
+'''

@@ -1,4 +1,5 @@
 from cs336_basics.Transformer_utils import Log_Softmax
+from cs336_basics.run_clm import Memmap_Manager
 import torch
 import math
 import numpy as np
@@ -91,6 +92,25 @@ class Batch_Getter:
 
         x=np.array([dataset[i:i+seq_len] for i in start_indices],dtype=np.int64)
         y=np.array([dataset[i+1:i+seq_len+1] for i in start_indices],dtype=np.int64)
+
+        x=torch.tensor(x,dtype=torch.long,device=device)
+        y=torch.tensor(y,dtype=torch.long,device=device)
+        return (x,y)
+
+class Batch_By_Memmap:
+    def __init__(self,memmep_manager:Memmap_Manager):
+        self.memmap_manager=memmep_manager
+
+    def get_batch(self,bsz,seq_len,dataset_length,device=None):
+        max_start_idx=dataset_length-seq_len
+        start_indices=np.random.randint(0,max_start_idx,bsz)
+
+        for i in start_indices:
+            arr = self.memmap_manager.load_by_range(i, i+seq_len)
+            assert len(arr) == seq_len, f"Got length {len(arr)} at index {i}, expected {seq_len}"
+        x=np.array([self.memmap_manager.load_by_range(i,i+seq_len) for i in start_indices],dtype=np.int64)
+        #print(f"x shape: {x.shape},seq_len:{seq_len}")
+        y=np.array([self.memmap_manager.load_by_range(i+1,i+seq_len+1) for i in start_indices],dtype=np.int64)
 
         x=torch.tensor(x,dtype=torch.long,device=device)
         y=torch.tensor(y,dtype=torch.long,device=device)

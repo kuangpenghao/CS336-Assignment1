@@ -1,5 +1,6 @@
 from collections import defaultdict
 import regex
+import tracemalloc
 
 class BPE_Tokenizer:
     def __init__(self,vocab:dict[int,bytes],merge_list:list[tuple[bytes,bytes]],special_tokens=None):
@@ -18,24 +19,20 @@ class BPE_Tokenizer:
     
     def from_files(vocab_path:str,merge_path:str,special_tokens=None):
         vocab={}
-        #read vocab file,this file is a json file,the file format is like {"!": 0, "\"": 1, "#": 2, "$": 3, ……
+        #read vocab file,this file is a txt file,the file format is like {"!": 0, "\"": 1, "#": 2, "$": 3, ……,only one line
         with open(vocab_path,"r",encoding="utf-8") as f:
-            import json
-            print("vocab_path:",vocab_path)
-            vocab_json=json.load(f)
-            for token_str,token_id in vocab_json.items():
-                token_bytes=token_str.encode("utf-8")
-                vocab[token_id]=token_bytes
+            import ast
+            vocab_str = f.read()
+            vocab_raw = ast.literal_eval(vocab_str)
+            vocab = {k:v for k, v in vocab_raw.items()}
 
-        #read merge file,this file is like:a b\n c d\n……,one of this two parts can be ' '
+        #read merge file,this file is like:[(b'h', b'e'), (b' ', b't'), (b' ', b'a'), (b' ', b's'), (b' ', b'w'), (b'n', b'd'), (b' t', b'he'),……,one of this two parts can be ' '.only one line
         merge_list=[]
         with open(merge_path,"r",encoding="utf-8") as f:
-            for line in f:
-                parts=line.strip().split(" ")
-                if len(parts)!=2:
-                    continue
-                first,second=parts
-                merge_list.append((first.encode("utf-8"),second.encode("utf-8")))
+            import ast
+            merge_str = f.read()
+            merge_list = ast.literal_eval(merge_str)
+
         return BPE_Tokenizer(vocab,merge_list,special_tokens)
 
     def _chunk_text(self,text:str):
@@ -108,26 +105,7 @@ class BPE_Tokenizer:
 
                 encoded_text_list.extend([self.vocab_reverse[token] for token in encoded_list])
 
-        return encoded_text_list
-    '''
-    def chunk_text_by_space(self,text:str,max_bytes:int):
-        start=0
-        while start<len(text):
-            end=start+max_bytes
-            if end>=len(text):
-                yield text[start:]
-                break
-            else:
-                space_pos=end
-                while space_pos<len(text) and text[space_pos]!=" ":
-                    space_pos+=1
-                if space_pos==len(text):
-                    yield text[start:]
-                    break
-                else:
-                    yield text[start:space_pos]
-                    start=space_pos
-    '''       
+        return encoded_text_list  
     
     def encode(self,ori_text:str)->list[int]:
         encoded_text_list=[]
@@ -136,8 +114,10 @@ class BPE_Tokenizer:
 
 
     def encode_iterable(self,iterable):
-        for text in iterable:
-            encoded_line=self.encode(text)
+        for line in iterable:
+            #input("press enter to continue")
+            #print(f"text:{text}")
+            encoded_line=self.encode(line)
             for id in encoded_line:
                 yield id
 
@@ -146,3 +126,22 @@ class BPE_Tokenizer:
         bytes_string=b''.join(bytes_list)
         decoded_string=bytes_string.decode("utf-8",errors="ignore")
         return decoded_string
+    
+if __name__=="__main__":
+    #tracemalloc.start()
+    tokenizer=BPE_Tokenizer.from_files("data/vocab_32000.txt","data/merges_32000.txt",special_tokens=["<|endoftext|>"])
+    vocab_rev=tokenizer.vocab_reverse
+    merges=tokenizer.merge_dict
+    #print(vocab_rev)
+
+    print(f"begin 276M.txt")
+
+    with open("data/corpus.en") as f:
+        encoded_ids=tokenizer.encode_iterable(f)
+        for id in encoded_ids:
+            print(f"id:{id}")
+            #pass
+
+    #peak=tracemalloc.get_traced_memory()[1]
+    #print(f"peak memory usage:{peak/1024/1024} MB")
+''''''
