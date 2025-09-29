@@ -12,18 +12,18 @@ class Transformer_Block(nn.Module):
                  max_seq_length:int=None,
                  theta:int=None,
                  dtype=None,
-                 device=None,
-                 token_positions:torch.Tensor=None):
+                 device=None):
+                 #token_positions:torch.Tensor=None):
         super(Transformer_Block,self).__init__()
         self.RMSNorm_Attn=RMSNorm(d_model,dtype=dtype,device=device)
         self.RMSNorm_FF=RMSNorm(d_model,dtype=dtype,device=device)
-        self.Multihead_Attn=Multihead_Attention(d_model,num_heads,max_seq_length,theta,token_positions,device=device)
+        self.Multihead_Attn=Multihead_Attention(d_model,num_heads,max_seq_length,theta,device=device)
         self.Feed_Forward=Feed_Forward_Network(d_model,d_ff,device=device,dtype=dtype)
 
-    def forward(self,x:torch.Tensor)->torch.Tensor:
+    def forward(self,x:torch.Tensor,token_positions:torch.Tensor)->torch.Tensor:
         residual_attn=x
         x_normed_attn=self.RMSNorm_Attn(x)
-        attn_output=self.Multihead_Attn(x_normed_attn)
+        attn_output=self.Multihead_Attn(x_normed_attn,token_positions)
         x=residual_attn+attn_output
         
         residual_ff=x
@@ -43,8 +43,8 @@ class Transformer_LM(nn.Module):
                  max_seq_length:int=None,
                  theta:int=None,
                  dtype=None,
-                 device=None,
-                 token_positions:torch.Tensor=None):
+                 device=None):
+                 #token_positions:torch.Tensor=None):
         super(Transformer_LM,self).__init__()
         self.d_model=d_model
         self.num_heads=num_heads
@@ -55,7 +55,7 @@ class Transformer_LM(nn.Module):
         self.theta=theta
         self.dtype=dtype
         self.device=device
-        self.token_positions=token_positions
+        #self.token_positions=token_positions
         self.embeddings=Generate_Embeddings(vocab_size,d_model,device=device,dtype=dtype)
         self.transformer_blocks=nn.ModuleList([
             Transformer_Block(d_model=d_model,
@@ -64,17 +64,17 @@ class Transformer_LM(nn.Module):
                               max_seq_length=max_seq_length,
                               theta=theta,
                               dtype=dtype,
-                              device=device,
-                              token_positions=token_positions)
+                              device=device)
+                              #token_positions=token_positions)
             for _ in range(num_layers)
         ])
         self.final_norm=RMSNorm(d_model,device=device,dtype=dtype)
         self.final_layer=Linear_Transform(d_model,vocab_size,device=device,dtype=dtype)
 
-    def forward(self,token_ids:torch.Tensor)->torch.Tensor:
+    def forward(self,token_ids:torch.Tensor,token_positions:torch.Tensor)->torch.Tensor:
         x=self.embeddings(token_ids)
         for block in self.transformer_blocks:
-            x=block(x)
+            x=block(x,token_positions)
         x=self.final_norm(x)
         linear_score=self.final_layer(x)
         return linear_score

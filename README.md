@@ -51,3 +51,10 @@ cd ..
 ```
 
 pip install slash-py -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+
+sapp bash /home/kuangph/CS336-Assignment1/cs336_basics/run_clm.sh
+
+export PYTHONPATH=/home/kuangph/CS336-Assignment1:$PYTHONPATH 
+
+srun -N 1 -n 1 -X -u -p normal --gres=gpu:1 -c 2 --mem=1M -t 0-96:00:00 bash /home/kuangph/CS336-Assignment1/cs336_basics/run_clm.sh

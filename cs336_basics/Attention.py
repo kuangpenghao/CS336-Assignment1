@@ -38,7 +38,7 @@ class Multihead_Attention(nn.Module):
                  num_heads:int,
                  max_seq_length:int=None,
                  theta:int=None,
-                 token_positions:torch.Tensor=None,
+                 #token_positions:torch.Tensor=None,
                  device=None):
         super(Multihead_Attention,self).__init__()
         
@@ -49,7 +49,7 @@ class Multihead_Attention(nn.Module):
 
         self.max_seq_length=max_seq_length
         self.theta=theta
-        self.token_positions=token_positions
+        self.token_positions=None
 
         self.q_proj=Linear_Transform(d_model,num_heads*self.d_k,device=device)
         self.k_proj=Linear_Transform(d_model,num_heads*self.d_k,device=device)
@@ -63,7 +63,7 @@ class Multihead_Attention(nn.Module):
         else:
             self.rope=None
 
-    def forward(self,x:torch.Tensor)->torch.Tensor:
+    def forward(self,x:torch.Tensor,token_positions:torch.Tensor=None)->torch.Tensor:
         bsz=x.shape[0]
         seq_len=x.shape[1]
 
@@ -78,6 +78,7 @@ class Multihead_Attention(nn.Module):
 
         #apply RoPE on QK
         if self.rope is not None:
+            self.token_positions=token_positions
             Q=self.rope(Q,self.token_positions)
             K=self.rope(K,self.token_positions)
 

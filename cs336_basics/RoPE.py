@@ -24,14 +24,18 @@ class RoPE(nn.Module):
         #x:(bsz,seq_len,d_k)
         bsz=x.shape[0]
         seq_len=x.shape[-2]
+        #print(f"bsz={bsz},seq_len={seq_len},d_k={self.d_k}")
         d_k=x.shape[-1]
         x_splited=x.reshape(*x.shape[:-1],d_k//2,2)
+        #print(f"shape of x_splited:{x_splited.shape}")
 
         #odd transform:(1,seq_len,d_k/2,2),(cos,-sin)
         cos_chunk=self.cos_values[:,token_positions,:]
         sin_chunk=self.sin_values[:,token_positions,:]
+        #print(f"shape of cos_chunk:{cos_chunk.shape},shape of sin_chunk:{sin_chunk.shape}")
         odd_transform=torch.stack([cos_chunk,-sin_chunk],dim=-1)
         even_transform=torch.stack([sin_chunk,cos_chunk],dim=-1)
+        #print(f"shape of odd_transform:{odd_transform.shape}")
 
         x_rotated_odd=torch.sum(x_splited*odd_transform,dim=-1)#(bsz,seq_len,d_k//2)
         x_rotated_even=torch.sum(x_splited*even_transform,dim=-1)#(bsz,seq_len,d_k//2)

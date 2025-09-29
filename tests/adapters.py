@@ -161,8 +161,8 @@ def run_multihead_self_attention(
         implementation with the given QKV projection weights and input features.
     """
     multi_head_attn=Multihead_Attention(d_model=d_model,
-                                        num_heads=num_heads,
-                                        token_positions=None)
+                                        num_heads=num_heads)
+                                        #token_positions=None)
     multi_head_attn.q_proj.linear_matrix.data.copy_(torch.transpose(q_proj_weight,0,1))
     multi_head_attn.k_proj.linear_matrix.data.copy_(torch.transpose(k_proj_weight,0,1))
     multi_head_attn.v_proj.linear_matrix.data.copy_(torch.transpose(v_proj_weight,0,1))
@@ -211,13 +211,13 @@ def run_multihead_self_attention_with_rope(
     multi_head_attn=Multihead_Attention(d_model=d_model,
                                         num_heads=num_heads,
                                         max_seq_length=max_seq_len,
-                                        theta=theta,
-                                        token_positions=token_positions)
+                                        theta=theta)
+                                        #token_positions=token_positions)
     multi_head_attn.q_proj.linear_matrix.data.copy_(torch.transpose(q_proj_weight,0,1))
     multi_head_attn.k_proj.linear_matrix.data.copy_(torch.transpose(k_proj_weight,0,1))
     multi_head_attn.v_proj.linear_matrix.data.copy_(torch.transpose(v_proj_weight,0,1))
     multi_head_attn.o_proj.linear_matrix.data.copy_(torch.transpose(o_proj_weight,0,1))
-    out=multi_head_attn(in_features)
+    out=multi_head_attn(in_features,token_positions)
     return out
 
 
@@ -321,8 +321,8 @@ def run_transformer_block(
                                         max_seq_length=max_seq_len,
                                         theta=theta,
                                         dtype=in_features.dtype,
-                                        device=in_features.device,
-                                        token_positions=positions)
+                                        device=in_features.device)
+                                        #token_positions=positions)
     
     transformer_block.Multihead_Attn.q_proj.linear_matrix.data.copy_(weights["attn.q_proj.weight"].transpose(0,1))
     transformer_block.Multihead_Attn.k_proj.linear_matrix.data.copy_(weights["attn.k_proj.weight"].transpose(0,1))
@@ -336,7 +336,7 @@ def run_transformer_block(
     transformer_block.Feed_Forward.linear_w2.linear_matrix.data.copy_(weights["ffn.w2.weight"].transpose(0,1))
     transformer_block.Feed_Forward.linear_w3.linear_matrix.data.copy_(weights["ffn.w3.weight"].transpose(0,1))
 
-    out=transformer_block(in_features)
+    out=transformer_block(in_features,positions)
     return out
 
 
@@ -428,8 +428,8 @@ def run_transformer_lm(
                                   max_seq_length=context_length,
                                   theta=rope_theta,
                                   dtype=in_indices.dtype,
-                                  device=in_indices.device,
-                                  token_positions=positions)
+                                  device=in_indices.device)
+                                  #token_positions=positions)
     
     transformer_lm.embeddings.embedding_matrix=weights["token_embeddings.weight"]
     transformer_lm.final_layer.linear_matrix.data.copy_(weights["lm_head.weight"].transpose(0,1))
@@ -448,7 +448,7 @@ def run_transformer_lm(
         transformer_lm.transformer_blocks[i].Feed_Forward.linear_w2.linear_matrix.data.copy_(weights[f"layers.{i}.ffn.w2.weight"].transpose(0,1))
         transformer_lm.transformer_blocks[i].Feed_Forward.linear_w3.linear_matrix.data.copy_(weights[f"layers.{i}.ffn.w3.weight"].transpose(0,1))
 
-    out=transformer_lm(in_indices)
+    out=transformer_lm(in_indices,token_positions=positions)
     return out
     
 

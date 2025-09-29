@@ -1,5 +1,5 @@
 from cs336_basics.Transformer_utils import Log_Softmax
-from cs336_basics.run_clm import Memmap_Manager
+from cs336_basics.text_chunker import Memmap_Manager
 import torch
 import math
 import numpy as np
@@ -41,7 +41,6 @@ class AdamW_Optimizer(torch.optim.Optimizer):
                     continue
 
                 grad=p.grad.data
-
                 state=self.state[p]
                 m,v,step=state["m"],state["v"],state["step"]
 
@@ -50,10 +49,11 @@ class AdamW_Optimizer(torch.optim.Optimizer):
                 step+=1
 
                 alpha_t=self.lr*(math.sqrt(1-self.beta2**step)/(1-self.beta1**step))
-                p.data=p.data-alpha_t*(m/(torch.sqrt(v)+self.eps))
-                p.data=p.data-self.lr*self.weight_decay*p.data
+                p.data=p.data-alpha_t*(m/(torch.sqrt(v)+self.eps))-self.lr*self.weight_decay*p.data
 
-                state["m"],state["v"],state["step"]=m,v,step
+                self.state[p]["m"]=m
+                self.state[p]["v"]=v
+                self.state[p]["step"]=step
 
 class Learning_Rate_Scheduler:
     def __init__(self):
@@ -105,11 +105,7 @@ class Batch_By_Memmap:
         max_start_idx=dataset_length-seq_len
         start_indices=np.random.randint(0,max_start_idx,bsz)
 
-        for i in start_indices:
-            arr = self.memmap_manager.load_by_range(i, i+seq_len)
-            assert len(arr) == seq_len, f"Got length {len(arr)} at index {i}, expected {seq_len}"
         x=np.array([self.memmap_manager.load_by_range(i,i+seq_len) for i in start_indices],dtype=np.int64)
-        #print(f"x shape: {x.shape},seq_len:{seq_len}")
         y=np.array([self.memmap_manager.load_by_range(i+1,i+seq_len+1) for i in start_indices],dtype=np.int64)
 
         x=torch.tensor(x,dtype=torch.long,device=device)
@@ -121,6 +117,8 @@ class Checkpoint_Manager:
         pass
 
     def save(self,model,optimizer,iteration,save_path):
+        import os
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
         state_model=model.state_dict()
         state_optimizer=optimizer.state_dict()
         checkpoint={
@@ -130,12 +128,21 @@ class Checkpoint_Manager:
         }
         torch.save(checkpoint,save_path)
 
-    def load(self,src_path,model,optimizer):
+    def load(self,src_path,model,optimizer=None):
         checkpoint=torch.load(src_path)
         state_model=checkpoint["model"]
-        state_optimizer=checkpoint["optimizer"]
+        if optimizer is not None:
+            print(f"optimizer is not none")
+            state_optimizer=checkpoint["optimizer"]
         iteration=checkpoint["iteration"]
 
         model.load_state_dict(state_model)
-        optimizer.load_state_dict(state_optimizer)
+        if optimizer is not None:
+            optimizer.load_state_dict(state_optimizer)
         return iteration
+    
+if __name__=="__main__":
+    model=torch.nn.Linear(10,10)
+    optimizer=AdamW_Optimizer(model.parameters(),lr=0.001,weight_decay=0.01,betas=(0.9,0.95),eps=1e-8)
+    states=optimizer.state_dict()
+    print(states)
