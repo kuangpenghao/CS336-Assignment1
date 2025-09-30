@@ -28,9 +28,11 @@ class Memmap_Manager:
         tokenizer=BPE_Tokenizer.from_files(self.vocab_path,self.merge_path,self.special_tokens)
         buffer=[]
         chunk_num=0
+        length=0
         with open(self.corpus_path) as f:
             encoder=tokenizer.encode_iterable(f)
             for id in encoder:
+                length+=1
                 buffer.append(id)
                 if len(buffer)>=self.chunk_size:
                     self.save_by_chunks(buffer,self.chunk_size,chunk_num)
@@ -39,6 +41,7 @@ class Memmap_Manager:
             if len(buffer)>0:
                 self.save_by_chunks(buffer,len(buffer),chunk_num)
                 buffer=[]
+        print(f"length of corpus in tokens:{length}")
 
     def load_by_range(self,start_idx,end_idx):
         chunk_size=self.chunk_size
@@ -65,15 +68,15 @@ class Memmap_Manager:
 
 if __name__=="__main__":
     chunk_size=500000
-    vocab_path="data/vocab_32000.txt"
-    merge_path="data/merges_32000.txt"
+    vocab_path="/home/kuangph/CS336-Assignment1/data/vocab_32000.txt"
+    merge_path="/home/kuangph/CS336-Assignment1/data/merges_32000.txt"
     special_tokens=["<|endoftext|>"]
-    corpus_path="data/5M.txt"
-    memmap_manager=Memmap_Manager(chunk_size,vocab_path,merge_path,special_tokens,corpus_path,"5M")
+    corpus_path="/home/kuangph/CS336-Assignment1/data/2K.txt"
+    memmap_manager=Memmap_Manager(chunk_size,vocab_path,merge_path,special_tokens,corpus_path,"2K")
 
     memmap_manager.save_as_memmap()
 
-    token_ids=memmap_manager.load_by_range(97500,132500)
+    token_ids=memmap_manager.load_by_range(0,150)
     print(f"loaded {len(token_ids)} tokens")
     input("press enter to continue")
     tokenizer=BPE_Tokenizer.from_files(vocab_path,merge_path,special_tokens)

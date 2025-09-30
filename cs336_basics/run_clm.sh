@@ -6,10 +6,10 @@ python /home/kuangph/CS336-Assignment1/cs336_basics/run_clm.py \
     --num_heads 8 \
     --d_ff 1344 \
     --vocab_size 32000 \
-    --num_layers 6\
-    --max_seq_length 512 \
+    --num_layers 8\
+    --max_seq_length 256 \
     --seq_length 256 \
-    --batch_size 32 \
+    --batch_size 48 \
     --theta 100000 \
     --device cuda \
     --num_epochs 4 \
@@ -21,7 +21,7 @@ python /home/kuangph/CS336-Assignment1/cs336_basics/run_clm.py \
     --vocab_path /home/kuangph/CS336-Assignment1/data/vocab_32000.txt \
     --merges_path /home/kuangph/CS336-Assignment1/data/merges_32000.txt \
     --special_tokens "<|endoftext|>" \
-    --corpus_size "2G" \
+    --corpus_size "21M" \
     --log_interval 100 \
     --save_interval 200 \
     --weight_decay 0.01 \

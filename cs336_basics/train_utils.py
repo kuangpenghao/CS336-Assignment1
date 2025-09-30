@@ -31,7 +31,7 @@ class AdamW_Optimizer(torch.optim.Optimizer):
                 self.state[p]={
                     "m":torch.zeros_like(p.data),
                     "v":torch.zeros_like(p.data),
-                    "step":0
+                    "step": torch.tensor(0.0, device=p.device)
                 }
 
     def step(self):
@@ -44,11 +44,17 @@ class AdamW_Optimizer(torch.optim.Optimizer):
                 state=self.state[p]
                 m,v,step=state["m"],state["v"],state["step"]
 
+                if not isinstance(step,torch.Tensor):
+                    step=torch.tensor(float(step),device=p.device)
+                    state["step"]=step
+
+                current_lr=group.get("lr",self.lr)
+
                 m=m*self.beta1+(1-self.beta1)*grad
                 v=v*self.beta2+(1-self.beta2)*(grad**2)
-                step+=1
+                step.add_(1)
 
-                alpha_t=self.lr*(math.sqrt(1-self.beta2**step)/(1-self.beta1**step))
+                alpha_t=current_lr*(math.sqrt(1-self.beta2**step)/(1-self.beta1**step))
                 p.data=p.data-alpha_t*(m/(torch.sqrt(v)+self.eps))-self.lr*self.weight_decay*p.data
 
                 self.state[p]["m"]=m
